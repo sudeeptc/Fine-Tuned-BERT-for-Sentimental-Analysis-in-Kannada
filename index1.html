@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentiment Analysis</title>
+    <!-- FontAwesome for spinner animation -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Styling for the loading animation */
+        #loading {
+            display: none; /* Initially hidden */
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        /* General styling for the page */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%; /* Make textarea responsive */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            resize: none;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+        }
+
+        .accuracy {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #555;
+        }    
+    </style>
+</head>
+<body>
+    <h1>Sentiment Analysis (Kannada Text)</h1>
+
+    <!-- Single Review Analysis -->
+    <textarea id="review" rows="5" placeholder="Enter your review..."></textarea><br>
+    <button id="analyzeBtn" onclick="analyzeSingleSentiment()">Analyze Sentiment</button>
+
+    <!-- Multiple Reviews Analysis -->
+    <input type="file" id="fileInput" accept=".txt" /><br>
+    <button id="uploadBtn" onclick="analyzeMultipleSentiments()">Upload and Analyze Reviews</button>
+
+    <div id="loading"><i class="fas fa-spinner fa-spin"></i> Analyzing...</div>
+    <div id="result"></div>
+
+    <script>
+        function analyzeSingleSentiment() {
+            var review = document.getElementById("review").value;
+            var resultDiv = document.getElementById("result");
+            var loadingDiv = document.getElementById("loading");
+
+            // Clear previous results
+            resultDiv.innerHTML = ""; // Clear the previous result
+            loadingDiv.style.display = "block"; // Show the loading animation
+
+            fetch('/analyze_sentiment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ review: review })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = "none"; // Hide the loading animation
+                resultDiv.innerHTML = "Sentiment: " + data.sentiment; // Display new result
+
+                var accuracyDiv = document.createElement('div');
+                accuracyDiv.classList.add('accuracy');
+                accuracyDiv.innerHTML = "Model Accuracy: " + data.accuracy + "%";
+                resultDiv.appendChild(accuracyDiv);
+            })
+            .catch(error => {
+                loadingDiv.style.display = "none"; // Hide the loading animation
+                resultDiv.innerHTML = "Error: " + error.message; // Display error message
+            });
+        }
+
+        function analyzeMultipleSentiments() {
+            var fileInput = document.getElementById("fileInput");
+            var resultDiv = document.getElementById("result");
+            var loadingDiv = document.getElementById("loading");
+
+            if (!fileInput.files.length) {
+                resultDiv.innerHTML = "Please select a file to upload."; // Error message
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            // Clear previous results
+            resultDiv.innerHTML = ""; // Clear the previous result
+            loadingDiv.style.display = "block"; // Show the loading animation
+
+            fetch('/analyze_multiple_sentiments', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = "none"; // Hide loading animation
+                var resultsText = "";
+                data.results.forEach((item, index) => {
+                    resultsText += `Review ${index + 1}: ${item.sentiment}<br>`;
+                    
+                });
+             var accuracyDiv = document.createElement('div');
+            accuracyDiv.classList.add('accuracy');
+            accuracyDiv.innerHTML = "Model Accuracy: " + data.accuracy + "%";
+            resultDiv.innerHTML = resultsText; // Display results for multiple reviews
+            resultDiv.appendChild(accuracyDiv); 
+            <p>Model Accuracy: ${data.accuracy}%</p>
+            })
+            .catch(error => {
+                loadingDiv.style.display = "none"; // Hide loading animation
+                resultDiv.innerHTML = "Error: " + error.message; // Display error message
+            });
+        }
+    </script>
+</body>
+</html>
